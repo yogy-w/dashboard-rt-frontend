@@ -1,8 +1,7 @@
-const base =
-  'https://script.google.com/macros/s/AKfycbz5VGhQacnOjGLfgcJQuCfN5eTqzjkOUaSR9s93JJWqOdeqJrpBozsgv6P0nnByPdhgdg/exec';
+const base = '/api/sheet';
 
-async function request(action: 'kas' | 'jimpitan') {
-  const r = await fetch(`${base}?action=${action}`, {
+export async function getKas() {
+  const r = await fetch(`${base}?action=kas`, {
     cache: 'no-store',
   });
 
@@ -10,19 +9,17 @@ async function request(action: 'kas' | 'jimpitan') {
     throw new Error(await r.text());
   }
 
-  const data = await r.json();
+  return r.json();
+}
 
-  if (!data.success) {
-    throw new Error(data.message || 'Gagal mengambil data');
+export async function getJimpitan() {
+  const r = await fetch(`${base}?action=jimpitan`, {
+    cache: 'no-store',
+  });
+
+  if (!r.ok) {
+    throw new Error(await r.text());
   }
 
-  return data;
-}
-
-export function getKas() {
-  return request('kas');
-}
-
-export function getJimpitan() {
-  return request('jimpitan');
+  return r.json();
 }
