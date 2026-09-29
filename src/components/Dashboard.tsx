@@ -163,7 +163,7 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
   return <div style={{minHeight:'100vh',background:'#f6f8fc',color:'#0f172a'}}>
     <header className="topbar">
       <div className="topbarInner">
-        <div className="brand">Dashboard RT</div>
+        <div className="brand">Dashboard RT 05</div>
         <nav className="topNav">
           <a href="/kas" className={kind==='kas'?'active':''}>Kas RT</a>
           <a href="/jimpitan" className={kind==='jimpitan'?'active':''}>Jimpitan</a>
