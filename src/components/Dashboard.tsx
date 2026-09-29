@@ -223,7 +223,7 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
         <div style={{overflowX:'auto'}}>
           <table style={{width:'100%',borderCollapse:'collapse'}}>
             <thead><tr>{(kind==='kas'
-              ? ['Bulan','Tahun','Kategori','Keterangan','Tipe','Jumlah']
+              ? ['Bulan','Tahun','Kategori','Tipe','Jumlah']
               : ['Tanggal','Bulan','Tahun','Kategori','Keterangan','Tipe','Jumlah']
             ).map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
@@ -232,11 +232,11 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
                 <td style={td}>{r.bulan||'-'}</td>
                 <td style={td}>{r.tahun||'-'}</td>
                 <td style={td}>{r.kategori||'-'}</td>
-                <td style={td}>{r.keterangan||'-'}</td>
+                {kind==='jimpitan' && <td style={td}>{r.keterangan||'-'}</td>}
                 <td style={td}><span style={badge(r.tipe)}>{r.tipe||'-'}</span></td>
                 <td style={{...td,textAlign:'right',fontWeight:700}}>{money(r.jumlah)}</td>
               </tr>)}
-              {!filtered.length&&<tr><td colSpan={kind==='kas'?6:7} style={{padding:35,textAlign:'center',color:'#94a3b8'}}>Tidak ada data untuk filter ini.</td></tr>}
+              {!filtered.length&&<tr><td colSpan={kind==='kas'?5:7} style={{padding:35,textAlign:'center',color:'#94a3b8'}}>Tidak ada data untuk filter ini.</td></tr>}
             </tbody>
           </table>
         </div>
