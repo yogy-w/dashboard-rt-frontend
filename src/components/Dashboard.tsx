@@ -21,6 +21,30 @@ type Row = {
 const COLORS = { income:'#16a34a', expense:'#ef4444', balance:'#2563eb', jimpitan:'#f59e0b' };
 const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
+const monthAliases: Record<string, string> = {
+  januari: 'Januari',
+  january: 'Januari',
+  februari: 'Februari',
+  february: 'Februari',
+  maret: 'Maret',
+  march: 'Maret',
+  april: 'April',
+  mei: 'Mei',
+  may: 'Mei',
+  juni: 'Juni',
+  june: 'Juni',
+  juli: 'Juli',
+  july: 'Juli',
+  agustus: 'Agustus',
+  august: 'Agustus',
+  september: 'September',
+  oktober: 'Oktober',
+  october: 'Oktober',
+  november: 'November',
+  desember: 'Desember',
+  december: 'Desember',
+};
+
 const money = (n:number) => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.round(n||0));
 
 function numberValue(v:any):number {
@@ -102,7 +126,10 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
 
   const filtered = useMemo(()=>rows.filter(r=>{
     if(mode==='all') return true;
-    if(mode==='month') return r.tahun===year && r.bulan.toLowerCase()===month.toLowerCase();
+    if(mode==='month') {
+        const normalizedMonth = monthAliases[r.bulan.toLowerCase()] || r.bulan;
+        return r.tahun === year && normalizedMonth === month;
+      }
     if(!rangeStart || !rangeEnd) return false;
     if(kind==='jimpitan'){
       const d=excelDate(r.tanggal);
@@ -110,9 +137,10 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
       return d>=new Date(rangeStart+'-01T00:00:00') && d<=new Date(rangeEnd+'-01T23:59:59');
     }
     const start = rangeStart; const end = rangeEnd;
-    const ym = `${r.tahun}-${String(months.indexOf(r.bulan)+1).padStart(2,'0')}`;
-    return ym>=start && ym<=end;
-  }),[rows,mode,year,month,rangeStart,rangeEnd]);
+    const normalizedMonth = monthAliases[r.bulan.toLowerCase()] || r.bulan;
+    const ym = `${r.tahun}-${String(months.indexOf(normalizedMonth) + 1 ).padStart(2,'0')}`;
+        return ym>=start && ym<=end;
+}),[rows,mode,year,month,rangeStart,rangeEnd]);
 
   useEffect(()=>{ setPage(1); },[mode,year,month,rangeStart,rangeEnd,kind]);
 
