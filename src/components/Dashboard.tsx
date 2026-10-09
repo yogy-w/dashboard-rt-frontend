@@ -195,6 +195,7 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
         <nav className="topNav">
           <a href="/kas" className={kind==='kas'?'active':''}>Kas RT</a>
           <a href="/jimpitan" className={kind==='jimpitan'?'active':''}>Jimpitan</a>
+          <a href="/pemasukan">Pemasukan</a>
         </nav>
         <button onClick={load} style={{border:'1px solid #dbe2ea',background:'#fff',borderRadius:10,padding:'10px 14px',display:'flex',gap:8,alignItems:'center'}}><RefreshCw size={16}/> Refresh</button>
       </div>

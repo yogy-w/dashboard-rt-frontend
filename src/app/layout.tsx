@@ -2,7 +2,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'Dashboard RT 05 RW 031',
-  description: 'Dashboard Kas RT dan Jimpitan',
+  description: 'Dashboard Kas RT, Jimpitan, dan Pemasukan',
 };
 
 export default function RootLayout({
