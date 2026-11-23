@@ -82,3 +82,17 @@ export async function simpanPemasukan(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+
+export async function simpanJimpitan(payload: {
+  masterId: string;
+  tanggal: string;
+  keterangan?: string;
+  nominal: number;
+}) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'simpan_jimpitan', ...payload }),
+  });
+}
