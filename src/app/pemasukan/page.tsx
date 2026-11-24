@@ -58,6 +58,7 @@ const today = () => {
 function typeLabel(type: string) {
 
   if (type === 'IURAN') return 'Iuran';
+  if (type === 'DANSOS') return 'Dana Sosial';
 
   if (type === 'SANTUNAN') return 'Santunan';
 
@@ -88,6 +89,7 @@ export default function PemasukanPage() {
   const [items, setItems] = useState<PiutangItem[]>([]);
 
   const [selected, setSelected] = useState<string[]>([]);
+  const [openYear, setOpenYear] = useState(String(new Date().getFullYear()));
 
   const [loadingWarga, setLoadingWarga] = useState(true);
 
@@ -526,87 +528,26 @@ export default function PemasukanPage() {
         ) : (
 
           <div className="itemList">
-
-            {items.map((item) => {
-
-              const checked = selected.includes(getItemKey(item));
-
-
-
-              return (
-
-                <label
-
-                  key={getItemKey(item)}
-
-                  className={`paymentItem ${checked ? 'checked' : ''}`}
-
-                >
-
-                  <input
-
-                    type="checkbox"
-
-                    checked={checked}
-
-                    onChange={() => toggleItem(item)}
-
-                  />
-
-
-
-                  <div className="itemMain">
-
-                    <div className="itemTop">
-
-                      <strong>{item.namaItem}</strong>
-
-                      <span className={`typeBadge ${item.tipe.toLowerCase()}`}>
-
-                        {typeLabel(item.tipe)}
-
-                      </span>
-
-                    </div>
-
-
-
-                    <div className="itemMeta">
-
-                      <span>
-
-                        Periode: {item.periodeBulan} {item.periodeTahun}
-
-                      </span>
-
-                      {item.penerimaNama && (
-
-                        <span>
-
-                          Penerima: {item.penerimaNama}
-
-                        </span>
-
-                      )}
-
-                    </div>
-
-                  </div>
-
-
-
-                  <strong className="itemNominal">
-
-                    {money(item.nominal)}
-
-                  </strong>
-
-                </label>
-
-              );
-
+            {Array.from(new Set(items.map(item => Number(item.periodeTahun)).filter(Boolean))).sort((a,b)=>a-b).map(year => {
+              const yearItems = items.filter(item => Number(item.periodeTahun) === year);
+              const yearOpen = openYear === String(year);
+              const monthOrder = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+              yearItems.sort((a,b) => monthOrder.indexOf(a.periodeBulan)-monthOrder.indexOf(b.periodeBulan));
+              return <div className="yearAccordion" key={year}>
+                <button type="button" className="yearAccordionHead" aria-expanded={yearOpen} onClick={()=>setOpenYear(yearOpen ? '' : String(year))}>
+                  <strong>{year}</strong><span>{yearItems.length} kewajiban</span><span>{yearOpen ? '−' : '+'}</span>
+                </button>
+                {yearOpen && <div className="yearAccordionBody">{yearItems.map(item => {
+                  const checked = selected.includes(getItemKey(item));
+                  return <label key={getItemKey(item)} className={`paymentItem ${checked ? 'checked' : ''}`}>
+                    <input type="checkbox" checked={checked} onChange={()=>toggleItem(item)} />
+                    <div className="itemMain"><div className="itemTop"><strong>{item.namaItem}</strong><span className={`typeBadge ${item.tipe.toLowerCase()}`}>{typeLabel(item.tipe)}</span></div>
+                    <div className="itemMeta"><span>Periode: {item.periodeBulan} {item.periodeTahun}</span>{item.penerimaNama && <span>Penerima: {item.penerimaNama}</span>}</div></div>
+                    <strong className="itemNominal">{money(item.nominal)}</strong>
+                  </label>;
+                })}</div>}
+              </div>;
             })}
-
           </div>
 
         )}
@@ -1055,10 +996,13 @@ export default function PemasukanPage() {
 
 
         .itemList {
-
           padding: 10px 20px;
-
         }
+
+        .yearAccordion { border: 1px solid #e2e8f0; border-radius: 11px; overflow: hidden; margin-bottom: 10px; }
+        .yearAccordionHead { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 15px; background: #f8fafc; border: 0; text-align: left; cursor: pointer; color: #0f172a; }
+        .yearAccordionHead span:nth-child(2) { margin-left: auto; color: #64748b; font-size: 12px; }
+        .yearAccordionBody { padding: 8px 14px; }
 
 
 

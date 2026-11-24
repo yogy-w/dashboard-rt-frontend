@@ -13,6 +13,7 @@ const today = () => {
 const money = (n:number) => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n||0);
 const TYPES = [
   { value:"IURAN", label:"Iuran" },
+  { value:"DANSOS", label:"Dana Sosial (bulanan)" },
   { value:"JIMPITAN", label:"Jimpitan" },
   { value:"SANTUNAN", label:"Santunan" },
   { value:"ACARA", label:"Acara" },

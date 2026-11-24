@@ -221,6 +221,10 @@ export async function simpanPengeluaran(payload: {
 }
 
 
+export async function simpanDonasi(payload: { tanggal: string; namaDonatur?: string; nik?: string; nominal: number; keterangan?: string }) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'simpan_donasi', ...payload }) });
+}
+
 export type MasterPemasukanRow = {
   id: string;
   tipe: 'IURAN' | 'JIMPITAN' | 'SANTUNAN' | 'ACARA' | string;

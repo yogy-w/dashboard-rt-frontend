@@ -15,6 +15,7 @@ const dashboardItems = [
 
 const mainItems = [
   { href: "/pemasukan", label: "Input Iuran", icon: Wallet },
+  { href: "/pemasukan/donasi", label: "Input Donasi", icon: HandCoins },
   { href: "/pemasukan/jimpitan", label: "Input Jimpitan", icon: HandCoins },
   { href: "/pemasukan/pengeluaran", label: "Input Pengeluaran", icon: ReceiptText },
   { href: "/pemasukan/tunggakan", label: "Data Tunggakan", icon: Search },
