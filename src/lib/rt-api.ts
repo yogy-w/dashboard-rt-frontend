@@ -55,6 +55,70 @@ export async function getPiutang(
   }>;
 }
 
+
+export type TunggakanDetail = {
+  namaItem: string;
+  tanggal: string | null;
+  periodeBulan: string;
+  periodeTahun: number;
+  nominal: number;
+  keterangan?: string;
+  penerimaNama?: string;
+};
+
+export type TunggakanGroup = {
+  total: number;
+  detail: TunggakanDetail[];
+};
+
+export type TunggakanWarga = {
+  nik: string;
+  nama: string;
+  iuran: TunggakanGroup;
+  santunan: TunggakanGroup;
+  other: TunggakanGroup;
+  total: number;
+};
+
+export async function getTunggakan(tanggal: string) {
+  return rtFetch(
+    `?action=tunggakan&tanggal=${encodeURIComponent(tanggal)}`
+  ) as Promise<{
+    success: boolean;
+    jumlahWarga: number;
+    totalTunggakan: number;
+    rows: TunggakanWarga[];
+  }>;
+}
+
+
+export async function refreshTunggakan() {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'refresh_tunggakan' }),
+  }) as Promise<{
+    success: boolean;
+    jumlahWarga?: number;
+    jumlahDetail?: number;
+    totalTunggakan?: number;
+    updatedAt?: string;
+  }>;
+}
+
+
+export type WargaAktifPenerima = {
+  nik: string;
+  nama: string;
+};
+
+export async function getWargaAktifPenerima() {
+  return rtFetch('?action=warga_aktif_penerima') as Promise<{
+    success: boolean;
+    rows: WargaAktifPenerima[];
+  }>;
+}
+
 export async function getMaster() {
   return rtFetch('?action=master');
 }
@@ -95,4 +159,102 @@ export async function simpanJimpitan(payload: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'simpan_jimpitan', ...payload }),
   });
+}
+
+
+export type KategoriPengeluaran = {
+  id: string;
+  nama: string;
+  status: boolean;
+};
+
+export type PengeluaranRow = {
+  rowNumber?: number;
+  bulan: string;
+  tanggal: string | null;
+  kategori: string;
+  keterangan: string;
+  nominal: number;
+};
+
+export async function getKategoriPengeluaran() {
+  return rtFetch('?action=kategori_pengeluaran') as Promise<{
+    success: boolean;
+    rows: KategoriPengeluaran[];
+  }>;
+}
+
+export async function tambahKategoriPengeluaran(nama: string) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'tambah_kategori_pengeluaran', nama }),
+  });
+}
+
+export async function ubahStatusKategoriPengeluaran(id: string, status: boolean) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'ubah_status_kategori_pengeluaran', id, status }),
+  });
+}
+
+export async function getPengeluaran() {
+  return rtFetch('?action=pengeluaran') as Promise<{
+    success: boolean;
+    rows: PengeluaranRow[];
+  }>;
+}
+
+export async function simpanPengeluaran(payload: {
+  tanggal: string;
+  kategori: string;
+  keterangan: string;
+  nominal: number;
+}) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'simpan_pengeluaran', ...payload }),
+  });
+}
+
+
+export type MasterPemasukanRow = {
+  id: string;
+  tipe: 'IURAN' | 'JIMPITAN' | 'SANTUNAN' | 'ACARA' | string;
+  namaItem: string;
+  nikPenerima: string;
+  namaPenerima: string;
+  kodeRef: string;
+  tanggal: string | null;
+  nominal: number;
+  status: boolean;
+  keterangan: string;
+};
+
+export async function tambahMasterPemasukan(payload: {
+  tipe: string;
+  namaItem: string;
+  nikPenerima?: string;
+  namaPenerima?: string;
+  kodeRef?: string;
+  tanggal: string;
+  nominal: number;
+  keterangan?: string;
+}) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'tambah_master', ...payload }),
+  }) as Promise<{ success: boolean; message?: string; row?: MasterPemasukanRow }>;
+}
+
+export async function ubahStatusMasterPemasukan(id: string, status: boolean) {
+  return rtFetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'ubah_status_master', id, status }),
+  }) as Promise<{ success: boolean; message?: string }>;
 }

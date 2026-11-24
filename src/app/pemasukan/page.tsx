@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Check, LogOut, RefreshCw, Save, Search, Wallet, HandCoins } from 'lucide-react';
+import { Check, LogOut, RefreshCw, Save, Search, Wallet, HandCoins, LayoutDashboard, ReceiptText, Tags , BookOpen } from 'lucide-react';
 
 import {
 
@@ -13,11 +13,9 @@ import {
 
   getWarga,
 
-  getMaster,
 
   simpanPemasukan,
 
-  simpanJimpitan,
 
   type PiutangItem,
 
@@ -100,12 +98,6 @@ export default function PemasukanPage() {
   const [error, setError] = useState('');
 
   const [success, setSuccess] = useState('');
-  const [masterJimpitan, setMasterJimpitan] = useState<Array<{id:string; namaItem:string; status:boolean}>>([]);
-  const [jimpitanMasterId, setJimpitanMasterId] = useState('');
-  const [jimpitanTanggal, setJimpitanTanggal] = useState(today());
-  const [jimpitanKeterangan, setJimpitanKeterangan] = useState('');
-  const [jimpitanNominal, setJimpitanNominal] = useState('');
-  const [savingJimpitan, setSavingJimpitan] = useState(false);
 
 
 
@@ -140,38 +132,12 @@ export default function PemasukanPage() {
         cache: 'no-store',
       });
       if (!response.ok) throw new Error('Logout gagal. Silakan coba lagi.');
-      router.replace('/pemasukan/login');
+      router.replace('/kas');
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Logout gagal. Silakan coba lagi.');
       setLoggingOut(false);
     }
-  }
-
-  async function loadMasterJimpitan() {
-    try {
-      const result = await getMaster() as { rows?: Array<{id:string; tipe:string; namaItem:string; status:boolean}> };
-      const rows = (result.rows || []).filter((r) => r.tipe === 'JIMPITAN' && r.status === true);
-      setMasterJimpitan(rows);
-      if (!jimpitanMasterId && rows.length) setJimpitanMasterId(rows[0].id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal mengambil master jimpitan');
-    }
-  }
-
-  async function handleSaveJimpitan() {
-    const nominal = Number(jimpitanNominal);
-    if (!jimpitanMasterId) { setError('Pilih grup jimpitan terlebih dahulu.'); return; }
-    if (!jimpitanTanggal) { setError('Tanggal wajib diisi.'); return; }
-    if (!Number.isFinite(nominal) || nominal <= 0) { setError('Nominal harus lebih dari 0.'); return; }
-    setSavingJimpitan(true); setError(''); setSuccess('');
-    try {
-      await simpanJimpitan({ masterId: jimpitanMasterId, tanggal: jimpitanTanggal, keterangan: jimpitanKeterangan.trim(), nominal });
-      setSuccess('Input jimpitan berhasil disimpan.');
-      setJimpitanKeterangan(''); setJimpitanNominal('');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal menyimpan jimpitan');
-    } finally { setSavingJimpitan(false); }
   }
 
   async function loadWarga() {
@@ -253,7 +219,6 @@ export default function PemasukanPage() {
   useEffect(() => {
 
     loadWarga();
-    loadMasterJimpitan();
 
   }, []);
 
@@ -380,79 +345,13 @@ export default function PemasukanPage() {
 
     <main className="pemasukanPage">
 
-      <div className="pemasukanHeader">
-
-        <div>
-
-          <h1>Input Pemasukan</h1>
-
-          <p>Catat pembayaran warga berdasarkan kewajiban yang masih belum dibayar.</p>
-
-        </div>
-
-
-
-        <div className="pemasukanHeaderActions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="refreshButton"
-            onClick={() => loadItems()}
-            disabled={!nik || loadingItems}
-          >
-            <RefreshCw size={16} className={loadingItems ? 'spin' : ''} />
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="refreshButton"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            aria-label="Logout dari halaman pemasukan"
-          >
-            <LogOut size={16} />
-            {loggingOut ? 'Keluar...' : 'Logout'}
-          </button>
-        </div>
-
-      </div>
-
-
+      
 
       {error && <div className="alert error">{error}</div>}
 
       {success && <div className="alert success">{success}</div>}
 
 
-
-      <section className="formCard" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <HandCoins size={22} />
-          <div><h2 style={{ margin: 0 }}>Input Jimpitan</h2><p style={{ margin: '4px 0 0', color: '#64748b' }}>Catat jimpitan berdasarkan grup dari APP_MASTER.</p></div>
-        </div>
-        <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          <label style={{ display: 'grid', gap: 6 }}>Tanggal
-            <input type="date" value={jimpitanTanggal} onChange={(e) => setJimpitanTanggal(e.target.value)} />
-          </label>
-          <label style={{ display: 'grid', gap: 6 }}>Grup Jimpitan
-            <select value={jimpitanMasterId} onChange={(e) => setJimpitanMasterId(e.target.value)}>
-              <option value="">Pilih grup jimpitan</option>
-              {masterJimpitan.map((m) => <option key={m.id} value={m.id}>{m.namaItem}</option>)}
-            </select>
-          </label>
-          <label style={{ display: 'grid', gap: 6 }}>Nominal (Rp)
-            <input type="number" min="1" step="1" value={jimpitanNominal} onChange={(e) => setJimpitanNominal(e.target.value)} placeholder="Contoh: 150000" />
-          </label>
-          <label style={{ display: 'grid', gap: 6 }}>Keterangan (opsional)
-            <input value={jimpitanKeterangan} onChange={(e) => setJimpitanKeterangan(e.target.value)} placeholder="Keterangan tambahan" />
-          </label>
-        </div>
-        {masterJimpitan.length === 0 && <p style={{ color: '#b45309' }}>Belum ada master JIMPITAN aktif di APP_MASTER.</p>}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-          <button type="button" className="saveButton" onClick={handleSaveJimpitan} disabled={savingJimpitan || masterJimpitan.length === 0}>
-            <Save size={16} /> {savingJimpitan ? 'Menyimpan...' : 'Simpan Jimpitan'}
-          </button>
-        </div>
-      </section>
 
       <section className="formCard">
 
@@ -750,37 +649,68 @@ export default function PemasukanPage() {
 
 
 
+      <div className="contentFooterActions">
+        <button
+          type="button"
+          className="refreshButton"
+          onClick={() => loadItems()}
+          disabled={!nik || loadingItems}
+        >
+          <RefreshCw size={16} className={loadingItems ? 'spin' : ''} />
+          {loadingItems ? 'Memuat...' : 'Refresh Kewajiban'}
+        </button>
+      </div>
+
       <style jsx>{`
 
         .pemasukanPage {
-
-          min-height: calc(100vh - 76px);
-
-          background: #f6f8fc;
-
-          padding: 28px 30px 50px;
-
+          width: 100%;
+          min-height: 0;
+          background: transparent;
+          padding: 0 0 24px;
           color: #0f172a;
-
         }
 
 
 
-        .pemasukanHeader,
+        .pemasukanTabs {
+          max-width: 1100px; margin: 0 auto 22px; display: flex; align-items: center;
+          gap: 10px; padding: 10px; background: #eef2f7; border: 1px solid #e1e7f0;
+          border-radius: 16px; overflow-x: auto;
+        }
+        .pemasukanTabs :global(.tabItem) {
+          display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
+          gap: 9px; min-height: 44px; padding: 0 18px; border: 1px solid #d8e0eb;
+          border-radius: 11px; background: #fff; color: #475569 !important;
+          text-decoration: none !important; font-size: 14px; font-weight: 650;
+          white-space: nowrap; transition: background .15s, border-color .15s, color .15s;
+        }
+        .pemasukanTabs :global(.tabItem:hover) { background: #f8fbff; border-color: #9db9e8; color: #1d4ed8 !important; }
+        .pemasukanTabs :global(.tabItem.active) { background: #2563eb; border-color: #2563eb; color: #fff !important; box-shadow: 0 3px 8px rgba(37,99,235,.20); }
+        .pemasukanTabs :global(.tabItem.active:hover) { background: #1d4ed8; color: #fff !important; }
 
+        .pemasukanHeader {
+          max-width: none;
+          margin-left: 0;
+          margin-right: 0;
+        }
+
+        /* Samakan lebar Input Iuran dengan area Dashboard Kas/Jimpitan */
         .formCard,
-
         .listCard {
-
-          max-width: 1100px;
-
-          margin-left: auto;
-
-          margin-right: auto;
-
+          width: 100%;
+          max-width: none;
+          margin-left: 0;
+          margin-right: 0;
         }
 
 
+
+        .contentFooterActions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 14px;
+        }
 
         .pemasukanHeader {
 
@@ -1397,9 +1327,7 @@ export default function PemasukanPage() {
         @media (max-width: 700px) {
 
           .pemasukanPage {
-
-            padding: 20px 15px 40px;
-
+            padding: 0 0 20px;
           }
 
 

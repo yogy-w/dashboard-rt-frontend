@@ -1,5 +1,5 @@
 const APPS_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbz5VGhQacnOjGLfgcJQuCfN5eTqzjkOUaSR9s93JJWqOdeqJrpBozsgv6P0nnByPdhgdg/exec';
+  'https://script.google.com/macros/s/AKfycbwPdgbi4D474e157IGAj6GtefoWwrB47vfs9w-pGnLLZlTL6nDEZUQQ7bPILo7K_Vwn8w/exec';
 
 export async function GET(request: Request) {
   try {

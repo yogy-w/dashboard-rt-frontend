@@ -1,1 +1,133 @@
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#202633}button,select{font:inherit}.layout{display:flex;min-height:100vh}.sidebar{width:240px;background:#fff;border-right:1px solid #e7eaf0;padding:22px 14px;position:fixed;top:0;bottom:0}.brand{font-weight:700;font-size:20px;padding:8px 12px 25px}.nav{display:flex;flex-direction:column;gap:6px}.nav a{padding:12px 14px;border-radius:8px;color:#596273;text-decoration:none}.nav a.active,.nav a:hover{background:#eef5ff;color:#2563eb}.content{margin-left:240px;flex:1;padding:28px;max-width:1500px}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.title{font-size:25px;font-weight:700}.subtitle{color:#7a8494;margin-top:5px}.filters{display:flex;flex-wrap:wrap;gap:10px;background:#fff;padding:14px;border:1px solid #e7eaf0;border-radius:10px;margin-bottom:18px}.filters select{padding:9px 12px;border:1px solid #d9dee8;border-radius:7px;background:#fff}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.card{background:#fff;border:1px solid #e7eaf0;border-radius:10px;padding:18px}.card-label{color:#7a8494;font-size:13px}.card-value{font-size:23px;font-weight:700;margin-top:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e7eaf0;border-radius:10px;padding:18px}.panel h3{margin:0 0 15px;font-size:16px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:11px 10px;border-bottom:1px solid #edf0f4;font-size:13px;white-space:nowrap}.table th{color:#6d7685;background:#fafbfc}.empty{padding:35px;text-align:center;color:#8a93a1}.pagination{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.pagination button{padding:7px 11px;border:1px solid #d9dee8;background:#fff;border-radius:6px;cursor:pointer}.pagination button:disabled{opacity:.4;cursor:not-allowed}@media(max-width:900px){.sidebar{width:190px}.content{margin-left:190px}.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:650px){.sidebar{position:static;width:100%;height:auto}.layout{display:block}.content{margin-left:0;padding:16px}.cards{grid-template-columns:1fr}.nav{flex-direction:row}.nav a{flex:1}.header{display:block}}
+
+
+/* Unified RT application shell */
+.appShell{min-height:100vh;background:#f5f7fb;color:#172033}
+.appSidebar{position:fixed;inset:0 auto 0 0;width:264px;background:#fff;border-right:1px solid #e5eaf1;padding:20px 14px 16px;display:flex;flex-direction:column;z-index:40;overflow-y:auto}
+.appBrand{display:flex;align-items:center;gap:11px;padding:7px 9px 23px;text-decoration:none;color:#101828;border-bottom:1px solid #edf0f5;margin-bottom:20px}
+.appBrandMark{width:40px;height:40px;border-radius:12px;background:#eaf1ff;color:#2563eb;display:grid;place-items:center}
+.appBrand strong{display:block;font-size:16px;letter-spacing:.2px}
+.appBrand small{display:block;color:#8490a2;font-size:11px;margin-top:3px}
+.appNavSection{display:flex;flex-direction:column;gap:4px}
+.appNavLabel{display:flex;align-items:center;gap:7px;color:#98a2b3;font-size:10px;font-weight:800;letter-spacing:1px;padding:0 11px 8px}
+.appNavSubLabel{font-size:10px;color:#9aa4b3;font-weight:800;letter-spacing:.7px;padding:12px 11px 5px}
+.appNavSubLabel.masterLabel{padding-top:18px}
+.appNavLink{min-height:42px;display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:9px;color:#526078;text-decoration:none;font-size:13px;font-weight:600;transition:background .15s,color .15s}
+.appNavLink svg{flex:none;color:#7b8798}
+.appNavLink:hover{background:#f3f6fb;color:#1d4ed8}
+.appNavLink.active{background:#eaf1ff;color:#1d4ed8}
+.appNavLink.active svg{color:#2563eb}
+.appNavDivider{height:1px;background:#edf0f5;margin:19px 4px}
+.appSidebarBottom{margin-top:auto;padding-top:20px;border-top:1px solid #edf0f5}
+.appAuthButton{height:42px;width:100%;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;font-size:13px;font-weight:700;cursor:pointer}
+.appAuthButton.login{background:#172554;color:#fff}
+.appAuthButton.logout{background:#fff;color:#475569;border:1px solid #dce3ed}
+.appAuthButton:disabled{opacity:.6;cursor:wait}
+.appMain{margin-left:264px;min-height:100vh;min-width:0}
+.appTopbar{height:76px;background:#fff;border-bottom:1px solid #e8edf4;padding:0 30px;display:flex;align-items:center;justify-content:space-between}
+.appTopTitle{font-size:17px;font-weight:800;color:#172033}
+.appTopSubtitle{font-size:11px;color:#8490a2;margin-top:4px}
+.appAdminPill{display:inline-flex;align-items:center;gap:6px;background:#ecfdf3;color:#15803d;border:1px solid #bbf7d0;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700}
+.appContent{padding:26px 30px 42px;max-width:1700px;margin:0 auto}
+.mobileMenuButton{display:none}
+.appMobileBackdrop{display:none}
+@media(max-width:900px){.appSidebar{width:238px}.appMain{margin-left:238px}.appContent{padding:22px 20px 36px}}
+@media(max-width:700px){
+ .mobileMenuButton{display:grid;place-items:center;position:fixed;top:14px;left:14px;width:40px;height:40px;border:1px solid #e1e7f0;background:#fff;border-radius:10px;z-index:60;color:#334155}
+ .appSidebar{width:270px;transform:translateX(-105%);transition:transform .2s ease;box-shadow:12px 0 35px rgba(15,23,42,.12)}
+ .appSidebar.mobileOpen{transform:translateX(0)}
+ .appMobileBackdrop{display:block;position:fixed;inset:0;background:rgba(15,23,42,.32);border:0;z-index:30}
+ .appMain{margin-left:0}
+ .appTopbar{height:70px;padding:0 16px 0 66px}
+ .appTopTitle{font-size:15px}
+ .appContent{padding:18px 14px 30px}
+}
+
+/* Layout refinement v11: fixed-feeling header and tighter content rhythm */
+.appShell{min-height:100vh}
+.appMain{min-height:100vh}
+.appTopbar{
+  position:sticky;
+  top:0;
+  z-index:25;
+  height:68px;
+  min-height:68px;
+  padding:0 26px;
+  box-shadow:0 1px 0 rgba(15,23,42,.025);
+}
+.appContent{
+  width:100%;
+  max-width:none;
+  padding:14px 12px 28px;
+  background:#f5f7fb;
+}
+.dashboardContent{
+  width:100%;
+  min-height:0;
+  background:transparent;
+  color:#0f172a;
+}
+.dashboardContent>main{margin:0;padding:0}
+.dashboardContent .kpis{margin-top:14px}
+.dashboardContent .rowCharts{margin-top:16px}
+@media(max-width:700px){
+  .appTopbar{height:62px;min-height:62px;padding:0 14px 0 64px}
+  .appContent{padding:12px 8px 22px}
+}
+
+/* Admin content refinement v12: page identity is in the global shell/navigation */
+.appContent .pemasukanPage,
+.appContent .jpPage,
+.appContent .epPage,
+.appContent .mpPage,
+.appContent .mkPage,
+.appContent .page{
+  min-height:0!important;
+  padding:4px 0 24px!important;
+  background:transparent;
+}
+.appContent .pemasukanPage{min-height:0}
+.appContent .pemasukanHeader,
+.appContent .jpHeader,
+.appContent .epHeader,
+.appContent .mpHeader,
+.appContent .mkHeader,
+.appContent .page>.header{display:none!important}
+.contentFooterActions,.tunggakanFooterActions{padding-bottom:4px}
+
+/* Admin pages use the same outer spacing and full content width as Dashboard Kas/Jimpitan */
+.appContent .pemasukanPage,
+.appContent .jpPage,
+.appContent .epPage,
+.appContent .mpPage,
+.appContent .mkPage,
+.appContent .page{
+  padding:0 0 24px!important;
+}
+.appContent .header,
+.appContent .pemasukanTabs,
+.appContent .filters,
+.appContent .kpis,
+.appContent .tableCard,
+.appContent .error,
+.appContent .epHeader,
+.appContent .epTabs,
+.appContent .epCard,
+.appContent .epAlert,
+.appContent .mpHeader,
+.appContent .mpTabs,
+.appContent .mpCard,
+.appContent .mpAlert,
+.appContent .mkHeader,
+.appContent .mkTabs,
+.appContent .mkCard,
+.appContent .mkAlert,
+.appContent .jpHeader,
+.appContent .jpTabs,
+.appContent .jpCard,
+.appContent .jpAlert{
+  width:100%;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}

@@ -188,19 +188,7 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
 
   const title=kind==='kas'?'Dashboard Kas RT':'Dashboard Jimpitan';
 
-  return <div style={{minHeight:'100vh',background:'#f6f8fc',color:'#0f172a'}}>
-    <header className="topbar">
-      <div className="topbarInner">
-        <div className="brand">Dashboard RT 05</div>
-        <nav className="topNav">
-          <a href="/kas" className={kind==='kas'?'active':''}>Kas RT</a>
-          <a href="/jimpitan" className={kind==='jimpitan'?'active':''}>Jimpitan</a>
-          <a href="/pemasukan">Pemasukan</a>
-        </nav>
-        <button onClick={load} style={{border:'1px solid #dbe2ea',background:'#fff',borderRadius:10,padding:'10px 14px',display:'flex',gap:8,alignItems:'center'}}><RefreshCw size={16}/> Refresh</button>
-      </div>
-    </header>
-
+  return <div className="dashboardContent">
     <main>
       <div style={{background:'#fff',border:'1px solid #e5eaf0',borderRadius:14,padding:16,display:'flex',gap:12,flexWrap:'wrap',marginBottom:18}}>
         <select value={mode} onChange={e=>setMode(e.target.value as any)} style={selectStyle}><option value="month">Per Bulan</option><option value="all">Sepanjang Waktu</option><option value="range">Range Bulan</option></select>
@@ -308,12 +296,18 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
     </main>
 
     <style jsx global>{`
-      .topbar{height:76px;background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:20}
-      .topbarInner{height:100%;max-width:1500px;margin:0 auto;padding:0 30px;display:flex;align-items:center;gap:30px}
-      .brand{font-size:22px;font-weight:800;white-space:nowrap}
-      .topNav{display:flex;align-items:center;gap:6px;flex:1}
-      .topNav a{text-decoration:none;color:#475569;padding:10px 16px;border-radius:9px;font-weight:500}
-      .topNav a.active{color:#2563eb;background:#eff6ff;font-weight:700}
+      .topbar{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:20}
+      .topbarInner{max-width:1500px;margin:0 auto;padding:18px 30px 14px;display:flex;flex-direction:column;align-items:stretch;gap:16px}
+      .topbarHeading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+      .brand{font-size:24px;font-weight:800;white-space:nowrap;letter-spacing:-.4px}
+      .refreshButton{border:1px solid #dbe2ea;background:#fff;color:#334155;border-radius:10px;padding:9px 13px;display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:600}
+      .navRow{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid #eef2f7;padding-top:12px}
+      .topNav{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+      .topNav a{text-decoration:none!important;color:#475569;padding:10px 17px;border:1px solid #dbe3ee;background:#fff;border-radius:10px;font-weight:600;transition:all .15s ease}
+      .topNav a:hover{background:#f8fafc;border-color:#94a3b8;color:#1e293b}
+      .topNav a.active{color:#fff;background:#2563eb;border-color:#2563eb;box-shadow:0 2px 5px rgba(37,99,235,.2)}
+      .loginButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none!important;background:#0f172a;color:#fff!important;border:1px solid #0f172a;border-radius:10px;padding:10px 18px;font-weight:700;white-space:nowrap;transition:background .15s ease}
+      .loginButton:hover{background:#1e293b}
       main{max-width:1500px;margin:0 auto;padding:24px 30px}
       .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
       .rowCharts{display:grid;grid-template-columns:0.9fr 1.6fr;gap:18px;margin-top:18px;align-items:stretch}
@@ -338,7 +332,7 @@ export default function Dashboard({ kind='kas' }:{kind?:'kas'|'jimpitan'}) {
       .dots{color:#94a3b8;padding:0 2px}
       @media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.rowCharts{grid-template-columns:1fr}.categoryCharts{grid-template-columns:1fr 1fr}}
       @media(max-width:800px){.topbarInner{padding:0 18px;gap:15px}.brand{font-size:20px}main{padding:18px}.categoryCharts{grid-template-columns:1fr}}
-      @media(max-width:600px){.pagination{align-items:flex-start}.pageControls{width:100%}.pageInfo{width:100%}.topbarInner{flex-wrap:wrap;height:auto;min-height:76px;padding:12px 16px}.topbar{height:auto}.topNav{order:3;flex-basis:100%}.kpis{grid-template-columns:1fr}.rowCharts,.categoryCharts{grid-template-columns:1fr}.chart,.donutChart,.monthlyChart{height:300px}}
+      @media(max-width:600px){.pagination{align-items:flex-start}.pageControls{width:100%}.pageInfo{width:100%}.topbarInner{padding:14px 16px 12px;gap:12px}.topbarHeading{align-items:center}.brand{font-size:19px}.navRow{align-items:stretch;gap:8px}.topNav{gap:7px}.topNav a{padding:9px 11px;font-size:13px}.loginButton{padding:9px 13px;font-size:13px}.refreshButton{padding:8px 10px;font-size:13px}.kpis{grid-template-columns:1fr}.rowCharts,.categoryCharts{grid-template-columns:1fr}.chart,.donutChart,.monthlyChart{height:300px}}
     `}</style>
   </div>;
 }
