@@ -262,3 +262,29 @@ export async function ubahStatusMasterPemasukan(id: string, status: boolean) {
     body: JSON.stringify({ action: 'ubah_status_master', id, status }),
   }) as Promise<{ success: boolean; message?: string }>;
 }
+
+
+// Checklist Iuran: data dihitung server-side dari APP_WARGA_STATUS dan APP_PEMASUKAN.
+export type ChecklistIuranCell = { status: 'PAID' | 'MIGRATED' | 'UNPAID' | 'NOT_DUE' };
+export type ChecklistIuranRow = { nik: string; nama: string; bulan: ChecklistIuranCell[] };
+
+export async function getChecklistIuran(tahun: number) {
+  return rtFetch(`?action=checklist_iuran&tahun=${encodeURIComponent(String(tahun))}`) as Promise<{
+    success: boolean;
+    tahun: number;
+    rows: ChecklistIuranRow[];
+  }>;
+}
+
+
+export type ReportCell = { status: 'PAID' | 'MIGRATED' | 'UNPAID' | 'NOT_DUE' | 'RECEIVER' };
+export type ReportMatrixRow = { nik: string; nama: string; cells: ReportCell[] };
+export type ReportColumn = { id: string; label: string; subtitle?: string };
+export type ReportMatrixResult = { tahun: number; columns: ReportColumn[]; rows: ReportMatrixRow[] };
+
+export async function getReportDansos(tahun: number) {
+  return rtFetch(`?action=report_dansos&tahun=${tahun}`) as Promise<ReportMatrixResult & { success: boolean }>;
+}
+export async function getReportSantunan(tahun: number) {
+  return rtFetch(`?action=report_santunan&tahun=${tahun}`) as Promise<ReportMatrixResult & { success: boolean }>;
+}

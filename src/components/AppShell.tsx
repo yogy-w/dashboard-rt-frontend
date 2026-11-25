@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Wallet, HandCoins, ReceiptText, Search,
-  BookOpen, Tags, ShieldCheck, LogIn, LogOut, Menu, X
+  BookOpen, Tags, ShieldCheck, LogIn, LogOut, Menu, X, ChevronLeft, ChevronRight,
+  FileText, HeartHandshake
 } from "lucide-react";
 
 const dashboardItems = [
@@ -21,6 +22,12 @@ const mainItems = [
   { href: "/pemasukan/tunggakan", label: "Data Tunggakan", icon: Search },
 ];
 
+const reportItems = [
+  { href: "/pemasukan/report/iuran", label: "Report Iuran", icon: FileText },
+  { href: "/pemasukan/report/dansos", label: "Report Dansos", icon: FileText },
+  { href: "/pemasukan/report/santunan", label: "Report Santunan", icon: HeartHandshake },
+];
+
 const masterItems = [
   { href: "/pemasukan/master-pemasukan", label: "Master Pemasukan", icon: BookOpen },
   { href: "/pemasukan/master-kategori", label: "Master Kategori Pengeluaran", icon: Tags },
@@ -30,9 +37,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{username:string;role:string}|null>(null);
   const [checking, setChecking] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const isLogin = pathname === "/pemasukan/login";
 
@@ -40,7 +49,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     let alive = true;
     fetch("/api/pemasukan-auth/status", { cache: "no-store" })
       .then(r => r.ok ? r.json() : { authenticated: false })
-      .then(data => { if (alive) setIsAdmin(Boolean(data.authenticated)); })
+      .then(data => { if (alive) { setIsAdmin(Boolean(data.authenticated)); setCurrentUser(data.user || null); } })
       .catch(() => { if (alive) setIsAdmin(false); })
       .finally(() => { if (alive) setChecking(false); });
     return () => { alive = false; };
@@ -53,6 +62,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     try {
       await fetch("/api/pemasukan-auth/logout", { method: "POST", cache: "no-store" });
       setIsAdmin(false);
+      setCurrentUser(null);
       router.replace("/kas");
       router.refresh();
     } finally {
@@ -65,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const linkClass = (href: string) => `appNavLink${pathname === href ? " active" : ""}`;
 
   return (
-    <div className="appShell">
+    <div className={`appShell${sidebarCollapsed ? " sidebarCollapsed" : ""}`}>
       <button className="mobileMenuButton" onClick={() => setMobileOpen(v => !v)} aria-label="Buka menu">
         {mobileOpen ? <X size={20}/> : <Menu size={20}/>}
       </button>
@@ -96,6 +106,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Icon size={18}/><span>{item.label}</span>
               </Link>;
             })}
+            <div className="appNavSubLabel masterLabel">REPORT</div>
+            {reportItems.map(item => {
+              const Icon = item.icon;
+              const active = pathname === item.href || pathname === "/pemasukan/checklist-iuran" && item.href.endsWith("/iuran");
+              return <Link key={item.href} href={item.href} className={`appNavLink${active ? " active" : ""}`}>
+                <Icon size={18}/><span>{item.label}</span>
+              </Link>;
+            })}
             <div className="appNavSubLabel masterLabel">MASTER DATA</div>
             {masterItems.map(item => {
               const Icon = item.icon;
@@ -112,7 +130,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <LogOut size={17}/>{loggingOut ? "Keluar..." : "Logout"}
               </button>
             : <Link className="appAuthButton login" href="/pemasukan/login">
-                <LogIn size={17}/>Login Admin
+                <LogIn size={17}/>Login Pengurus
               </Link>
           )}
         </div>
@@ -120,11 +138,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="appMain">
         <header className="appTopbar">
-          <div>
+          <div className="appTopbarLeft">
+            <button className="sidebarToggle" type="button" onClick={() => setSidebarCollapsed(v => !v)} aria-label={sidebarCollapsed ? "Perbesar sidebar" : "Perkecil sidebar"} title={sidebarCollapsed ? "Perbesar sidebar" : "Perkecil sidebar"}>
+              {sidebarCollapsed ? <ChevronRight size={18}/> : <ChevronLeft size={18}/>}
+            </button>
+            <div>
             <div className="appTopTitle">Sistem Keuangan RT 05</div>
             <div className="appTopSubtitle">RT 005 / RW 031</div>
+            </div>
           </div>
-          {isAdmin && <span className="appAdminPill"><ShieldCheck size={14}/> Admin</span>}
+          {isAdmin && <span className="appAdminPill"><ShieldCheck size={14}/> {currentUser ? `${currentUser.username} · ${currentUser.role}` : "Pengurus"}</span>}
         </header>
         <main className="appContent">{children}</main>
       </div>
