@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HandCoins, LogOut, Save, Wallet, Search, LayoutDashboard, ReceiptText, Tags , BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getMaster, simpanJimpitan } from "../../../lib/rt-api";
+import PemasukanDetailTable from "../../../components/pemasukan/PemasukanDetailTable";
 
 type MasterItem = { id: string; namaItem: string; tipe: string; status: boolean };
 
@@ -23,6 +24,7 @@ export default function JimpitanPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [detailRefreshToken, setDetailRefreshToken] = useState(0);
 
   useEffect(() => {
     getMaster().then((result: any) => {
@@ -42,6 +44,7 @@ export default function JimpitanPage() {
     try {
       await simpanJimpitan({ masterId, tanggal, nominal: value, keterangan: keterangan.trim() });
       setSuccess("Input jimpitan berhasil disimpan.");
+      setDetailRefreshToken(token => token + 1);
       setNominal(""); setKeterangan("");
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal menyimpan jimpitan."); }
     finally { setSaving(false); }
@@ -63,13 +66,14 @@ export default function JimpitanPage() {
       <div className="jpCardTitle"><HandCoins size={20}/><div><h2>Data Jimpitan</h2><p>Masukkan tanggal, grup, dan nominal penerimaan.</p></div></div>
       {loading ? <p>Memuat grup jimpitan...</p> : <div className="jpGrid">
         <label>Tanggal<input type="date" value={tanggal} onChange={e=>setTanggal(e.target.value)}/></label>
-        <label>Grup Jimpitan<select value={masterId} onChange={e=>setMasterId(e.target.value)}><option value="">Pilih grup jimpitan</option>{masters.map(m=><option key={m.id} value={m.id}>{m.namaItem}</option>)}</select></label>
+        <label>Kategori / Grup Jimpitan<select value={masterId} onChange={e=>setMasterId(e.target.value)}><option value="">Pilih kategori / grup jimpitan</option>{masters.map(m=><option key={m.id} value={m.id}>{m.namaItem}</option>)}</select></label>
         <label>Nominal (Rp)<input type="number" min="1" step="1" value={nominal} onChange={e=>setNominal(e.target.value)} placeholder="Contoh: 150000"/></label>
         <label>Keterangan (opsional)<input value={keterangan} onChange={e=>setKeterangan(e.target.value)} placeholder="Keterangan tambahan"/></label>
       </div>}
       {!loading && !masters.length && <p className="jpWarning">Belum ada master JIMPITAN aktif di APP_MASTER.</p>}
       <div className="jpActions"><button onClick={submit} disabled={saving || loading || !masters.length}><Save size={16}/>{saving ? "Menyimpan..." : "Simpan Jimpitan"}</button></div>
     </section>
+    <PemasukanDetailTable type="JIMPITAN" refreshToken={detailRefreshToken} />
     <style jsx>{`
       .jpPage{min-height:100vh;background:#f6f8fc;color:#0f172a;padding:28px 30px 50px}
       .jpHeader,.jpTabs,.jpCard,.jpAlert{max-width:1100px;margin-left:auto;margin-right:auto}
@@ -80,7 +84,7 @@ export default function JimpitanPage() {
       .jpTabs :global(.tabItem){display:inline-flex;flex:0 0 auto;align-items:center;gap:9px;min-height:44px;padding:0 18px;border:1px solid #d8e0eb;border-radius:11px;background:#fff;color:#475569!important;text-decoration:none!important;font-size:14px;font-weight:650;white-space:nowrap;transition:all .15s ease}
       .jpTabs :global(.tabItem:hover){background:#f8fbff;border-color:#9db9e8;color:#1d4ed8!important}.jpTabs :global(.tabItem.active){background:#2563eb;border-color:#2563eb;color:#fff!important;box-shadow:0 3px 8px rgba(37,99,235,.20)}
       .jpTabs :global(.tabItem.active:hover){background:#1d4ed8;color:#fff!important}
-      .jpCard{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:22px}
+      .jpCard{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:20px}
       .jpCardTitle{display:flex;gap:12px;align-items:center;margin-bottom:20px}.jpCardTitle h2{font-size:19px;margin:0}
       .jpGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
       label{display:grid;gap:7px;font-size:13px;font-weight:650;color:#334155}

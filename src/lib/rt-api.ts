@@ -123,8 +123,24 @@ export async function getMaster() {
   return rtFetch('?action=master');
 }
 
+export type PemasukanRow = {
+  id: string;
+  tanggal: string | null;
+  periodeBulan: string;
+  periodeTahun: number;
+  tipe: string;
+  masterId: string;
+  nik: string;
+  nama: string;
+  keterangan: string;
+  nominal: number;
+};
+
 export async function getPemasukan() {
-  return rtFetch('?action=pemasukan');
+  return rtFetch('?action=pemasukan') as Promise<{
+    success: boolean;
+    rows: PemasukanRow[];
+  }>;
 }
 
 export async function simpanPemasukan(payload: {
@@ -221,7 +237,7 @@ export async function simpanPengeluaran(payload: {
 }
 
 
-export async function simpanDonasi(payload: { tanggal: string; namaDonatur?: string; nik?: string; nominal: number; keterangan?: string }) {
+export async function simpanDonasi(payload: { tanggal: string; namaDonatur: string; nominal: number; keterangan?: string }) {
   return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'simpan_donasi', ...payload }) });
 }
 

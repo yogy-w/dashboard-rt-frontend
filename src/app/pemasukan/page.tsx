@@ -2,7 +2,7 @@
 
 
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Check, LogOut, RefreshCw, Save, Search, Wallet, HandCoins, LayoutDashboard, ReceiptText, Tags , BookOpen } from 'lucide-react';
@@ -11,6 +11,8 @@ import {
 
   getPiutang,
 
+  getPemasukan,
+
   getWarga,
 
 
@@ -18,6 +20,8 @@ import {
 
 
   type PiutangItem,
+
+  type PemasukanRow,
 
   type Warga,
 
@@ -56,6 +60,7 @@ const today = () => {
 
 
 function typeLabel(type: string) {
+  if (type === 'DANSOS' || type === 'DANA SOSIAL') return 'Dana Sosial';
 
   if (type === 'IURAN') return 'Iuran';
   if (type === 'DANSOS') return 'Dana Sosial';
@@ -87,8 +92,16 @@ export default function PemasukanPage() {
   const [tanggal, setTanggal] = useState(today());
 
   const [items, setItems] = useState<PiutangItem[]>([]);
+  const [pemasukanRows, setPemasukanRows] = useState<PemasukanRow[]>([]);
+  const [loadingPemasukan, setLoadingPemasukan] = useState(true);
+  const [pemasukanError, setPemasukanError] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyType, setHistoryType] = useState('ALL');
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPageSize = 10;
 
   const [selected, setSelected] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState('ALL');
   const [openYear, setOpenYear] = useState(String(new Date().getFullYear()));
 
   const [loadingWarga, setLoadingWarga] = useState(true);
@@ -110,6 +123,48 @@ export default function PemasukanPage() {
     [items, selected]
 
   );
+
+  const filteredItems = useMemo(() => items.filter((item) => {
+    if (typeFilter === 'ALL') return true;
+    const type = String(item.tipe || '').trim().toUpperCase();
+    return (type === 'DANA SOSIAL' ? 'DANSOS' : type) === typeFilter;
+  }), [items, typeFilter]);
+
+  const filteredPemasukanRows = useMemo(() => {
+    const query = historySearch.trim().toLocaleLowerCase('id');
+    return pemasukanRows
+      .filter((row) => {
+        const type = String(row.tipe || '').trim().toUpperCase();
+        if (type === 'JIMPITAN' || type === 'DONASI') return false;
+        const normalizedType = type === 'DANA SOSIAL' ? 'DANSOS' : type;
+        if (historyType !== 'ALL' && normalizedType !== historyType) return false;
+        if (!query) return true;
+        return [row.nama, row.nik, row.keterangan, row.id, row.masterId, row.periodeBulan, row.periodeTahun, normalizedType]
+          .join(' ')
+          .toLocaleLowerCase('id')
+          .includes(query);
+      })
+      .sort((a, b) => String(b.tanggal || '').localeCompare(String(a.tanggal || '')) || String(b.id).localeCompare(String(a.id)));
+  }, [pemasukanRows, historySearch, historyType]);
+
+  const totalHistoryPages = Math.max(1, Math.ceil(filteredPemasukanRows.length / historyPageSize));
+  const visiblePemasukanRows = useMemo(() => {
+    const start = (historyPage - 1) * historyPageSize;
+    return filteredPemasukanRows.slice(start, start + historyPageSize);
+  }, [filteredPemasukanRows, historyPage]);
+
+  const loadPemasukanHistory = useCallback(async () => {
+    setLoadingPemasukan(true);
+    setPemasukanError('');
+    try {
+      const result = await getPemasukan();
+      setPemasukanRows(result.rows || []);
+    } catch (exception) {
+      setPemasukanError(exception instanceof Error ? exception.message : 'Gagal memuat detail pemasukan.');
+    } finally {
+      setLoadingPemasukan(false);
+    }
+  }, []);
 
 
 
@@ -224,6 +279,18 @@ export default function PemasukanPage() {
 
   }, []);
 
+  useEffect(() => {
+    void loadPemasukanHistory();
+  }, [loadPemasukanHistory]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearch, historyType]);
+
+  useEffect(() => {
+    if (historyPage > totalHistoryPages) setHistoryPage(totalHistoryPages);
+  }, [historyPage, totalHistoryPages]);
+
 
 
   useEffect(() => {
@@ -248,17 +315,13 @@ export default function PemasukanPage() {
   }
 
   function toggleAll() {
-
-    if (items.length > 0 && items.every((item) => selected.includes(getItemKey(item)))) {
-
-      setSelected([]);
-
-    } else {
-
-      setSelected(items.map(getItemKey));
-
-    }
-
+    const visibleKeys = filteredItems.map(getItemKey);
+    if (!visibleKeys.length) return;
+    const allVisibleSelected = visibleKeys.every((key) => selected.includes(key));
+    setSelected((current) => allVisibleSelected
+      ? current.filter((key) => !visibleKeys.includes(key))
+      : Array.from(new Set([...current, ...visibleKeys]))
+    );
   }
 
 
@@ -328,6 +391,7 @@ export default function PemasukanPage() {
 
 
       await loadItems(nik, tanggal);
+      await loadPemasukanHistory();
 
     } catch (e) {
 
@@ -362,6 +426,15 @@ export default function PemasukanPage() {
           <Wallet size={19} />
 
           Data Pembayaran
+          <button
+            type="button"
+            className="refreshButton"
+            onClick={() => loadItems()}
+            disabled={!nik || loadingItems}
+          >
+            <RefreshCw size={16} className={loadingItems ? 'spin' : ''} />
+            {loadingItems ? 'Memuat...' : 'Refresh Kewajiban'}
+          </button>
 
         </div>
 
@@ -479,17 +552,22 @@ export default function PemasukanPage() {
 
 
 
-          {items.length > 0 && (
-
-            <button type="button" className="selectAll" onClick={toggleAll}>
-
+          <div className="listActions">
+            <label className="typeFilterLabel">
+              <span>Jenis Pembayaran</span>
+              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                <option value="ALL">Semua jenis</option>
+                <option value="IURAN">Iuran</option>
+                <option value="DANSOS">Dana Sosial</option>
+                <option value="SANTUNAN">Santunan</option>
+                <option value="ACARA">Acara</option>
+              </select>
+            </label>
+            {items.length > 0 && filteredItems.length > 0 && <button type="button" className="selectAll" onClick={toggleAll}>
               <Check size={16} />
-
-              {items.length > 0 && items.every((item) => selected.includes(getItemKey(item))) ? 'Batal Semua' : 'Pilih Semua'}
-
-            </button>
-
-          )}
+              {filteredItems.every((item) => selected.includes(getItemKey(item))) ? 'Batal Semua' : 'Pilih Semua'}
+            </button>}
+          </div>
 
         </div>
 
@@ -525,11 +603,18 @@ export default function PemasukanPage() {
 
           </div>
 
+        ) : !filteredItems.length ? (
+
+          <div className="empty">
+            <Search size={22} />
+            <span>Tidak ada kewajiban untuk jenis ini.</span>
+          </div>
+
         ) : (
 
           <div className="itemList">
-            {Array.from(new Set(items.map(item => Number(item.periodeTahun)).filter(Boolean))).sort((a,b)=>a-b).map(year => {
-              const yearItems = items.filter(item => Number(item.periodeTahun) === year);
+            {Array.from(new Set(filteredItems.map(item => Number(item.periodeTahun)).filter(Boolean))).sort((a,b)=>a-b).map(year => {
+              const yearItems = filteredItems.filter(item => Number(item.periodeTahun) === year);
               const yearOpen = openYear === String(year);
               const monthOrder = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
               yearItems.sort((a,b) => monthOrder.indexOf(a.periodeBulan)-monthOrder.indexOf(b.periodeBulan));
@@ -590,17 +675,65 @@ export default function PemasukanPage() {
 
 
 
-      <div className="contentFooterActions">
-        <button
-          type="button"
-          className="refreshButton"
-          onClick={() => loadItems()}
-          disabled={!nik || loadingItems}
-        >
-          <RefreshCw size={16} className={loadingItems ? 'spin' : ''} />
-          {loadingItems ? 'Memuat...' : 'Refresh Kewajiban'}
-        </button>
-      </div>
+      <section className="historyCard" aria-labelledby="pemasukan-history-title">
+        <div className="historyHeader">
+          <div>
+            <h2 id="pemasukan-history-title">Detail Pemasukan</h2>
+            <p>Riwayat iuran, dana sosial, santunan, dan acara. Donasi serta jimpitan tidak ditampilkan.</p>
+            <span className="historyCount">{filteredPemasukanRows.length} transaksi</span>
+          </div>
+          <div className="historyControls">
+            <label className="historyTypeFilter">
+              <span>Jenis</span>
+              <select value={historyType} onChange={(event) => setHistoryType(event.target.value)}>
+                <option value="ALL">Semua jenis</option>
+                <option value="IURAN">Iuran</option>
+                <option value="DANSOS">Dana Sosial</option>
+                <option value="SANTUNAN">Santunan</option>
+                <option value="ACARA">Acara</option>
+              </select>
+            </label>
+            <label className="historySearch">
+              <Search size={16} />
+              <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="Cari nama, NIK, atau keterangan..." />
+            </label>
+            <button type="button" className="historyRefresh" onClick={() => void loadPemasukanHistory()} disabled={loadingPemasukan}>
+              <RefreshCw size={15} className={loadingPemasukan ? 'spin' : ''} />
+              {loadingPemasukan ? 'Memuat...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {pemasukanError && <div className="historyError">{pemasukanError}</div>}
+        {loadingPemasukan ? <div className="historyEmpty">Memuat detail pemasukan...</div>
+          : filteredPemasukanRows.length === 0 ? <div className="historyEmpty">Tidak ada detail pemasukan untuk filter ini.</div>
+          : <>
+            <div className="historyTableWrap">
+              <table className="historyTable">
+                <thead><tr><th>Tanggal</th><th>Jenis</th><th>Periode</th><th>Warga</th><th>Keterangan</th><th className="historyAmount">Nominal</th></tr></thead>
+                <tbody>{visiblePemasukanRows.map((row, index) => {
+                  const normalizedType = String(row.tipe || '').trim().toUpperCase() === 'DANA SOSIAL' ? 'DANSOS' : String(row.tipe || '').trim().toUpperCase();
+                  return <tr key={`${row.id}-${row.nik}-${index}`}>
+                    <td>{row.tanggal || '—'}</td>
+                    <td><span className={`historyTypeBadge ${normalizedType.toLowerCase()}`}>{typeLabel(normalizedType)}</span></td>
+                    <td>{row.periodeBulan && row.periodeTahun ? `${row.periodeBulan} ${row.periodeTahun}` : '—'}</td>
+                    <td>{row.nama || '—'}</td>
+                    <td className="historyDescription">{row.keterangan || '—'}</td>
+                    <td className="historyAmount">{money(row.nominal)}</td>
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+            <div className="historyPagination">
+              <span>Menampilkan {((historyPage - 1) * historyPageSize) + 1}–{Math.min(historyPage * historyPageSize, filteredPemasukanRows.length)} dari {filteredPemasukanRows.length}</span>
+              <div>
+                <button type="button" onClick={() => setHistoryPage(page => Math.max(1, page - 1))} disabled={historyPage <= 1}>Sebelumnya</button>
+                <span>Halaman {historyPage} / {totalHistoryPages}</span>
+                <button type="button" onClick={() => setHistoryPage(page => Math.min(totalHistoryPages, page + 1))} disabled={historyPage >= totalHistoryPages}>Berikutnya</button>
+              </div>
+            </div>
+          </>}
+      </section>
 
       <style jsx>{`
 
@@ -647,11 +780,34 @@ export default function PemasukanPage() {
 
 
 
-        .contentFooterActions {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 14px;
-        }
+        .historyCard { width: 100%; margin-top: 18px; padding: 20px; border: 1px solid #e5eaf0; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03); }
+        .historyHeader { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-bottom: 16px; }
+        .historyHeader h2 { margin: 0; font-size: 17px; }
+        .historyHeader p { margin: 6px 0; color: #64748b; font-size: 13px; }
+        .historyCount { color: #64748b; font-size: 12px; }
+        .historyControls { display: flex; align-items: flex-end; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+        .historyTypeFilter { display: grid; gap: 5px; color: #64748b; font-size: 11px; font-weight: 700; }
+        .historyTypeFilter select, .historySearch input { height: 38px; border: 1px solid #dbe2ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; }
+        .historyTypeFilter select { min-width: 132px; padding: 0 10px; }
+        .historySearch { display: flex; align-items: center; gap: 7px; height: 38px; padding-left: 10px; border: 1px solid #dbe2ea; border-radius: 9px; color: #94a3b8; }
+        .historySearch input { width: 230px; height: 34px; padding: 0 8px 0 0; border: 0; outline: 0; }
+        .historyRefresh, .historyPagination button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid #dbe2ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .historyRefresh:disabled, .historyPagination button:disabled { opacity: .5; cursor: not-allowed; }
+        .historyTableWrap { overflow-x: auto; border: 1px solid #e8edf3; border-radius: 10px; }
+        .historyTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .historyTable th { padding: 11px 12px; background: #f8fafc; color: #64748b; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+        .historyTable td { padding: 11px 12px; border-top: 1px solid #eef2f7; color: #334155; vertical-align: top; }
+        .historyTable tbody tr:hover { background: #fbfdff; }
+        .historyAmount { text-align: right !important; white-space: nowrap; font-weight: 700; }
+        .historyTypeBadge { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .historyTypeBadge.dansos { background: #f0fdf4; color: #15803d; }
+        .historyTypeBadge.santunan { background: #fff7ed; color: #c2410c; }
+        .historyTypeBadge.acara { background: #faf5ff; color: #7e22ce; }
+        .historyDescription { min-width: 200px; max-width: 360px; white-space: normal; }
+        .historyEmpty { padding: 28px 12px; color: #64748b; text-align: center; }
+        .historyError { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #fecaca; border-radius: 9px; background: #fef2f2; color: #b91c1c; font-size: 13px; }
+        .historyPagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; color: #64748b; font-size: 12px; }
+        .historyPagination > div { display: flex; align-items: center; gap: 10px; }
 
         .pemasukanHeader {
 
@@ -815,6 +971,8 @@ export default function PemasukanPage() {
 
           gap: 8px;
 
+          justify-content: space-between;
+
           font-size: 16px;
 
           font-weight: 750;
@@ -968,6 +1126,52 @@ export default function PemasukanPage() {
         }
 
 
+
+        .listActions {
+
+          display: flex;
+
+          align-items: flex-end;
+
+          gap: 10px;
+
+        }
+
+        .typeFilterLabel {
+
+          display: grid;
+
+          gap: 5px;
+
+          color: #64748b;
+
+          font-size: 11px;
+
+          font-weight: 700;
+
+        }
+
+        .typeFilterLabel select {
+
+          min-width: 150px;
+
+          height: 38px;
+
+          padding: 0 10px;
+
+          border: 1px solid #dbe2ea;
+
+          border-radius: 9px;
+
+          background: #fff;
+
+          color: #334155;
+
+          font: inherit;
+
+          font-size: 13px;
+
+        }
 
         .listHeader h2 {
 
@@ -1270,6 +1474,13 @@ export default function PemasukanPage() {
 
         @media (max-width: 700px) {
 
+          .historyCard { padding: 14px; }
+          .historyHeader { align-items: stretch; flex-direction: column; }
+          .historyControls { align-items: stretch; flex-direction: column; }
+          .historyTypeFilter select, .historySearch input { width: 100%; }
+          .historyPagination { align-items: flex-start; flex-direction: column; }
+          .historyPagination > div { width: 100%; justify-content: space-between; }
+
           .pemasukanPage {
             padding: 0 0 20px;
           }
@@ -1290,6 +1501,8 @@ export default function PemasukanPage() {
 
           }
 
+          .sectionTitle { flex-wrap: wrap; }
+
 
 
           .selectedWarga {
@@ -1309,6 +1522,22 @@ export default function PemasukanPage() {
             align-items: stretch;
 
             flex-direction: column;
+
+          }
+
+          .listActions {
+
+            width: 100%;
+
+            align-items: stretch;
+
+            flex-direction: column;
+
+          }
+
+          .typeFilterLabel select {
+
+            width: 100%;
 
           }
 
