@@ -31,6 +31,7 @@ const reportItems = [
 const masterItems = [
   { href: "/pemasukan/master-pemasukan", label: "Master Pemasukan", icon: BookOpen },
   { href: "/pemasukan/master-kategori", label: "Master Pengeluaran", icon: Tags },
+  { href: "/pemasukan/master-donasi", label: "Master Donasi", icon: HandCoins },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

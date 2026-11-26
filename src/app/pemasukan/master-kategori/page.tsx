@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { HandCoins, LayoutDashboard, LogOut, Plus, ReceiptText, Search, Tags, Wallet, Power , BookOpen } from "lucide-react";
-import { getKategoriPengeluaran, tambahKategoriPengeluaran, ubahStatusKategoriPengeluaran, type KategoriPengeluaran } from "../../../lib/rt-api";
+import { HandCoins, LayoutDashboard, LogOut, Plus, ReceiptText, Search, Tags, Wallet, BookOpen } from "lucide-react";
+import { getKategoriPengeluaran, tambahKategoriPengeluaran, type KategoriPengeluaran } from "../../../lib/rt-api";
 
 export default function MasterKategoriPage(){
  const router=useRouter();
@@ -11,14 +11,12 @@ export default function MasterKategoriPage(){
  const [nama,setNama]=useState("");
  const [loading,setLoading]=useState(true);
  const [saving,setSaving]=useState(false);
- const [busyId,setBusyId]=useState("");
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
  const [loggingOut,setLoggingOut]=useState(false);
  const load=useCallback(async()=>{setLoading(true);setError("");try{const r=await getKategoriPengeluaran();setRows(r.rows||[]);}catch(e){setError(e instanceof Error?e.message:"Gagal memuat master kategori.");}finally{setLoading(false);}},[]);
  useEffect(()=>{void load();},[load]);
  async function add(){if(!nama.trim())return setError("Nama kategori wajib diisi.");setSaving(true);setError("");setSuccess("");try{await tambahKategoriPengeluaran(nama.trim());setNama("");setSuccess("Kategori berhasil ditambahkan.");await load();}catch(e){setError(e instanceof Error?e.message:"Gagal menambahkan kategori.");}finally{setSaving(false);}}
- async function toggle(row:KategoriPengeluaran){setBusyId(row.id);setError("");setSuccess("");try{await ubahStatusKategoriPengeluaran(row.id,!row.status);setSuccess(`Kategori ${row.nama} ${row.status?"dinonaktifkan":"diaktifkan"}.`);await load();}catch(e){setError(e instanceof Error?e.message:"Gagal mengubah status kategori.");}finally{setBusyId("");}}
  async function logout(){setLoggingOut(true);try{const r=await fetch("/api/pemasukan-auth/logout",{method:"POST",cache:"no-store"});if(!r.ok)throw new Error("Logout gagal.");router.replace("/kas");router.refresh();}catch(e){setError(e instanceof Error?e.message:"Logout gagal.");setLoggingOut(false);}}
  return <main className="mkPage">
   
@@ -30,7 +28,7 @@ export default function MasterKategoriPage(){
   </section>
   <section className="mkCard">
    <div className="mkListHead"><div><h2>Daftar Kategori</h2><p>{rows.length} kategori · {rows.filter(x=>x.status).length} aktif</p></div><button className="mkRefresh" onClick={()=>void load()}>Refresh</button></div>
-   {loading?<p>Memuat kategori...</p>:rows.length===0?<p>Belum ada kategori.</p>:<div className="mkTableWrap"><table><thead><tr><th>Nama Kategori</th><th>Status</th><th>Aksi</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><strong>{row.nama}</strong><small>{row.id}</small></td><td><span className={row.status?"status active":"status inactive"}>{row.status?"Aktif":"Nonaktif"}</span></td><td><button className={row.status?"toggle off":"toggle on"} disabled={busyId===row.id} onClick={()=>void toggle(row)}><Power size={14}/>{busyId===row.id?"Memproses...":row.status?"Nonaktifkan":"Aktifkan"}</button></td></tr>)}</tbody></table></div>}
+   {loading?<p>Memuat kategori...</p>:rows.length===0?<p>Belum ada kategori.</p>:<div className="mkTableWrap"><table><thead><tr><th>Nama Kategori</th><th>Status</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><strong>{row.nama}</strong><small>{row.id}</small></td><td><span className={row.status?"status active":"status inactive"}>{row.status?"Aktif":"Nonaktif"}</span></td></tr>)}</tbody></table></div>}
   </section>
   <style jsx>{`
    .mkPage{min-height:100vh;background:#f6f8fc;color:#0f172a;padding:28px 30px 50px}.mkHeader,.mkTabs,.mkCard,.mkAlert{max-width:1100px;margin-left:auto;margin-right:auto}.mkHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}h1{font-size:27px;margin:0}.mkHeader p,.mkTitle p,.mkListHead p{color:#64748b;margin:6px 0 0}.mkLogout,.mkRefresh{display:flex;gap:8px;align-items:center;padding:10px 14px;border:1px solid #dbe2ea;background:#fff;border-radius:9px;cursor:pointer}

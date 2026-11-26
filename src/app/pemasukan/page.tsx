@@ -5,11 +5,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Check, LogOut, RefreshCw, Save, Search, Wallet, HandCoins, LayoutDashboard, ReceiptText, Tags , BookOpen } from 'lucide-react';
+import { Check, LogOut, RefreshCw, Save, Search, Trash2, X, Wallet, HandCoins, LayoutDashboard, ReceiptText, Tags , BookOpen } from 'lucide-react';
 
 import {
 
   getPiutang,
+  deleteTransaksi,
 
   getPemasukan,
 
@@ -113,6 +114,8 @@ export default function PemasukanPage() {
   const [error, setError] = useState('');
 
   const [success, setSuccess] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<PemasukanRow | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(false);
 
 
 
@@ -403,6 +406,18 @@ export default function PemasukanPage() {
 
     }
 
+  }
+
+  async function confirmDeleteTransaction() {
+    if (!deleteTarget) return;
+    setDeletingTransaction(true); setError('');
+    try {
+      await deleteTransaksi(deleteTarget.id);
+      setDeleteTarget(null);
+      await Promise.all([loadPemasukanHistory(), nik ? loadItems(nik, tanggal) : Promise.resolve()]);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : 'Gagal menghapus transaksi.');
+    } finally { setDeletingTransaction(false); }
   }
 
 
@@ -710,7 +725,7 @@ export default function PemasukanPage() {
           : <>
             <div className="historyTableWrap">
               <table className="historyTable">
-                <thead><tr><th>Tanggal</th><th>Jenis</th><th>Periode</th><th>Warga</th><th>Keterangan</th><th className="historyAmount">Nominal</th></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Jenis</th><th>Periode</th><th>Warga</th><th>Keterangan</th><th className="historyAmount">Nominal</th><th>Aksi</th></tr></thead>
                 <tbody>{visiblePemasukanRows.map((row, index) => {
                   const normalizedType = String(row.tipe || '').trim().toUpperCase() === 'DANA SOSIAL' ? 'DANSOS' : String(row.tipe || '').trim().toUpperCase();
                   return <tr key={`${row.id}-${row.nik}-${index}`}>
@@ -720,6 +735,7 @@ export default function PemasukanPage() {
                     <td>{row.nama || '—'}</td>
                     <td className="historyDescription">{row.keterangan || '—'}</td>
                     <td className="historyAmount">{money(row.nominal)}</td>
+                    <td>{['IURAN', 'DANSOS', 'DANA SOSIAL', 'SANTUNAN', 'ACARA'].includes(normalizedType) && <button type="button" className="historyDelete" onClick={() => setDeleteTarget(row)} aria-label={`Hapus transaksi ${row.id}`}><Trash2 size={14}/> Hapus</button>}</td>
                   </tr>;
                 })}</tbody>
               </table>
@@ -734,6 +750,15 @@ export default function PemasukanPage() {
             </div>
           </>}
       </section>
+
+      {deleteTarget && <div className="historyModalOverlay" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !deletingTransaction) setDeleteTarget(null); }}>
+        <section className="historyModal" role="dialog" aria-modal="true" aria-labelledby="deleteIncomeTitle">
+          <header><div><h3 id="deleteIncomeTitle">Hapus transaksi pemasukan?</h3><p>{deleteTarget.id} · {deleteTarget.nama || typeLabel(deleteTarget.tipe)} · {money(deleteTarget.nominal)}</p></div><button type="button" onClick={() => setDeleteTarget(null)} disabled={deletingTransaction} aria-label="Tutup"><X size={18}/></button></header>
+          <p>Transaksi ini akan dihapus dari APP_PEMASUKAN dan dicatat di audit log.</p>
+          {error && <div className="historyError">{error}</div>}
+          <footer><button type="button" className="historyCancel" onClick={() => { setDeleteTarget(null); setError(''); }} disabled={deletingTransaction}>Batal</button><button type="button" className="historyDeleteConfirm" onClick={() => void confirmDeleteTransaction()} disabled={deletingTransaction}>{deletingTransaction ? 'Menghapus...' : 'Ya, Hapus'}</button></footer>
+        </section>
+      </div>}
 
       <style jsx>{`
 
@@ -808,6 +833,16 @@ export default function PemasukanPage() {
         .historyError { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #fecaca; border-radius: 9px; background: #fef2f2; color: #b91c1c; font-size: 13px; }
         .historyPagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; color: #64748b; font-size: 12px; }
         .historyPagination > div { display: flex; align-items: center; gap: 10px; }
+        .historyDelete { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #fecaca; border-radius: 8px; background: #fff; color: #b91c1c; font-size: 12px; font-weight: 650; cursor: pointer; white-space: nowrap; }
+        .historyModalOverlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,.48); }
+        .historyModal { width: min(460px,100%); padding: 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 20px 60px rgba(15,23,42,.25); }
+        .historyModal header { display: flex; justify-content: space-between; gap: 12px; }
+        .historyModal h3 { margin: 0; font-size: 18px; }
+        .historyModal header p,.historyModal>p { color: #64748b; font-size: 13px; }
+        .historyModal header button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #dbe2ea; border-radius: 8px; background: white; cursor: pointer; }
+        .historyModal footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+        .historyModal footer button { height: 38px; padding: 0 13px; border: 1px solid #dbe2ea; border-radius: 8px; background: white; font-weight: 650; cursor: pointer; }
+        .historyModal footer .historyDeleteConfirm { border-color: #dc2626; background: #dc2626; color: white; }
 
         .pemasukanHeader {
 

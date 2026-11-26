@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { HandCoins, LayoutDashboard, LogOut, ReceiptText, Save, Search, Tags, Wallet, RefreshCw , BookOpen } from "lucide-react";
-import { getKategoriPengeluaran, getPengeluaran, simpanPengeluaran, type KategoriPengeluaran, type PengeluaranRow } from "../../../lib/rt-api";
+import { HandCoins, LayoutDashboard, LogOut, Pencil, ReceiptText, Save, Search, Tags, Trash2, Wallet, RefreshCw, X , BookOpen } from "lucide-react";
+import { deleteTransaksi, getKategoriPengeluaran, getPengeluaran, simpanPengeluaran, updatePengeluaran, type KategoriPengeluaran, type PengeluaranRow } from "../../../lib/rt-api";
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 const money = (n:number) => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n||0);
@@ -21,6 +21,13 @@ export default function PengeluaranPage() {
   const [loggingOut,setLoggingOut] = useState(false);
   const [error,setError] = useState("");
   const [success,setSuccess] = useState("");
+  const [editRow,setEditRow] = useState<PengeluaranRow|null>(null);
+  const [editTanggal,setEditTanggal] = useState("");
+  const [editKategori,setEditKategori] = useState("");
+  const [editKeterangan,setEditKeterangan] = useState("");
+  const [editNominal,setEditNominal] = useState("");
+  const [deleteTarget,setDeleteTarget] = useState<PengeluaranRow|null>(null);
+  const [mutating,setMutating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -50,6 +57,30 @@ export default function PengeluaranPage() {
     } catch(e) { setError(e instanceof Error ? e.message : "Gagal menyimpan pengeluaran."); }
     finally { setSaving(false); }
   }
+  function beginEdit(row:PengeluaranRow) {
+    setEditRow(row);
+    setEditTanggal((row.tanggal||"").slice(0,10));
+    setEditKategori(row.kategori);
+    setEditKeterangan(row.keterangan);
+    setEditNominal(String(row.nominal||""));
+    setError("");
+  }
+  async function saveEdit() {
+    if(!editRow) return;
+    const value=Number(editNominal);
+    if(!editTanggal||!editKategori||!editKeterangan.trim()||!Number.isFinite(value)||value<=0) return setError("Lengkapi tanggal, kategori, keterangan, dan nominal yang valid.");
+    setMutating(true);setError("");
+    try { await updatePengeluaran({id:editRow.id,tanggal:editTanggal,kategori:editKategori,keterangan:editKeterangan.trim(),nominal:value});setEditRow(null);await load(); }
+    catch(e){setError(e instanceof Error?e.message:"Gagal memperbarui pengeluaran.");}
+    finally{setMutating(false);}
+  }
+  async function confirmDelete() {
+    if(!deleteTarget)return;
+    setMutating(true);setError("");
+    try { await deleteTransaksi(deleteTarget.id);setDeleteTarget(null);await load(); }
+    catch(e){setError(e instanceof Error?e.message:"Gagal menghapus pengeluaran.");}
+    finally{setMutating(false);}
+  }
   async function logout() {
     setLoggingOut(true);
     try { const r=await fetch("/api/pemasukan-auth/logout",{method:"POST",cache:"no-store"}); if(!r.ok) throw new Error("Logout gagal."); router.replace("/kas");router.refresh(); }
@@ -69,8 +100,15 @@ export default function PengeluaranPage() {
       <div className="epActions"><button onClick={submit} disabled={saving||loading||!categories.length}><Save size={16}/>{saving?"Menyimpan...":"Simpan Pengeluaran"}</button></div>
     </section>
     <section className="epCard epHistory"><div className="epHistoryHead"><div><h2>Pengeluaran Terakhir</h2><p>12 transaksi terbaru</p></div><button onClick={()=>void load()}><RefreshCw size={15}/> Refresh</button></div>
-      {loading?<p>Memuat transaksi...</p>:rows.length===0?<p>Belum ada transaksi pengeluaran.</p>:<div className="epTableWrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>{rows.map((r,i)=><tr key={`${r.rowNumber||i}-${i}`}><td>{r.tanggal||"-"}</td><td>{r.kategori}</td><td>{r.keterangan}</td><td>{money(r.nominal)}</td></tr>)}</tbody></table></div>}
+      {loading?<p>Memuat transaksi...</p>:rows.length===0?<p>Belum ada transaksi pengeluaran.</p>:<div className="epTableWrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>{rows.map((r,i)=><tr key={r.id||`${r.rowNumber||i}-${i}`}><td>{r.tanggal||"-"}</td><td>{r.kategori}</td><td>{r.keterangan}</td><td>{money(r.nominal)}</td><td><div className="rowActions"><button type="button" onClick={()=>beginEdit(r)}><Pencil size={14}/> Edit</button><button type="button" className="deleteAction" onClick={()=>setDeleteTarget(r)}><Trash2 size={14}/> Hapus</button></div></td></tr>)}</tbody></table></div>}
     </section>
+    {(editRow||deleteTarget)&&<div className="modalOverlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!mutating){setEditRow(null);setDeleteTarget(null);setError("");}}}>
+      {editRow&&<section className="modal" role="dialog" aria-modal="true" aria-labelledby="editExpenseTitle"><header><div><h3 id="editExpenseTitle">Edit Pengeluaran</h3><p>ID transaksi: {editRow.id}</p></div><button type="button" className="closeButton" onClick={()=>{setEditRow(null);setError("");}} disabled={mutating} aria-label="Tutup"><X size={18}/></button></header>
+        {error&&<div className="modalError">{error}</div>}<div className="modalGrid"><label>Tanggal<input type="date" value={editTanggal} onChange={e=>setEditTanggal(e.target.value)}/></label><label>Kategori<select value={editKategori} onChange={e=>setEditKategori(e.target.value)}>{!categories.some(c=>c.nama===editKategori)&&editKategori&&<option value={editKategori}>{editKategori}</option>}{categories.map(c=><option key={c.id} value={c.nama}>{c.nama}</option>)}</select></label><label className="wide">Keterangan<input value={editKeterangan} onChange={e=>setEditKeterangan(e.target.value)}/></label><label>Nominal (Rp)<input type="number" min="1" value={editNominal} onChange={e=>setEditNominal(e.target.value)}/></label></div>
+        <footer><button type="button" className="cancel" onClick={()=>{setEditRow(null);setError("");}} disabled={mutating}>Batal</button><button type="button" className="saveEdit" onClick={()=>void saveEdit()} disabled={mutating}>{mutating?"Menyimpan...":"Simpan Perubahan"}</button></footer>
+      </section>}
+      {deleteTarget&&<section className="modal" role="dialog" aria-modal="true" aria-labelledby="deleteExpenseTitle"><header><div><h3 id="deleteExpenseTitle">Hapus Pengeluaran?</h3><p>{deleteTarget.id} · {deleteTarget.keterangan}</p></div><button type="button" className="closeButton" onClick={()=>{setDeleteTarget(null);setError("");}} disabled={mutating} aria-label="Tutup"><X size={18}/></button></header>{error&&<div className="modalError">{error}</div>}<footer><button type="button" className="cancel" onClick={()=>{setDeleteTarget(null);setError("");}} disabled={mutating}>Batal</button><button type="button" className="deleteConfirm" onClick={()=>void confirmDelete()} disabled={mutating}>{mutating?"Menghapus...":"Ya, Hapus"}</button></footer></section>}
+    </div>}
     <style jsx>{`
       .epPage{min-height:100vh;background:#f6f8fc;color:#0f172a;padding:28px 30px 50px}.epHeader,.epTabs,.epCard,.epAlert{max-width:1100px;margin-left:auto;margin-right:auto}
       .epHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}h1{font-size:27px;margin:0}.epHeader p,.epTitle p,.epHistoryHead p{color:#64748b;margin:6px 0 0}
@@ -84,6 +122,8 @@ export default function PengeluaranPage() {
       .epActions{display:flex;justify-content:flex-end;margin-top:20px}.epActions button{display:flex;gap:8px;align-items:center;border:0;border-radius:9px;padding:12px 18px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
       button:disabled{opacity:.55;cursor:not-allowed}.epAlert{padding:12px 14px;border-radius:9px;margin-bottom:16px}.error{background:#fef2f2;color:#b91c1c}.success{background:#f0fdf4;color:#166534}.epWarning{color:#b45309}
       .epHistoryHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.epTableWrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid #e8edf3;white-space:nowrap}th{background:#f8fafc;color:#475569}td:last-child,th:last-child{text-align:right}
+      .rowActions{display:flex;justify-content:flex-end;gap:6px}.rowActions button{display:inline-flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;color:#334155;font-size:12px;font-weight:650;cursor:pointer}.rowActions .deleteAction{border-color:#fecaca;color:#b91c1c}
+      .modalOverlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:#0f172a80}.modal{width:min(540px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:20px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 20px 60px #0f172a40}.modal header{display:flex;justify-content:space-between;gap:12px;margin-bottom:16px}.modal h3{margin:0;font-size:18px}.modal header p{margin:5px 0 0;color:#64748b;font-size:12px}.closeButton{width:34px;height:34px;display:grid;place-items:center;border:1px solid #dbe2ea;border-radius:8px;background:#fff;cursor:pointer}.modalGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.modalGrid label{display:grid;gap:6px;color:#475569;font-size:12px;font-weight:650}.modalGrid input,.modalGrid select{height:40px;min-width:0;padding:0 10px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;font:inherit}.modalGrid .wide{grid-column:1/-1}.modal footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.modal footer button{height:38px;padding:0 13px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;font-weight:650;cursor:pointer}.modal footer .saveEdit{border-color:#2563eb;background:#2563eb;color:#fff}.modal footer .deleteConfirm{border-color:#dc2626;background:#dc2626;color:#fff}.modalError{margin-bottom:12px;padding:10px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:13px}
       @media(max-width:650px){.epPage{padding:20px 15px}.epHeader{flex-direction:column}.epLogout{align-self:flex-end}.epGrid{grid-template-columns:1fr}.epGrid .wide{grid-column:auto}.epActions button{width:100%;justify-content:center}}
     `}</style>
   </main>;

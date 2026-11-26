@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { HandCoins } from "lucide-react";
-import { simpanDonasi } from "../../../lib/rt-api";
+import { getMasterDonasi, simpanDonasi, type MasterDonasiRow } from "../../../lib/rt-api";
 import PemasukanDetailTable from "../../../components/pemasukan/PemasukanDetailTable";
+import { useEffect } from "react";
 
 const today = () => {
   const date = new Date();
@@ -18,6 +19,9 @@ const money = (value: number) => new Intl.NumberFormat("id-ID", {
 
 export default function DonasiPage() {
   const [tanggal, setTanggal] = useState(today());
+  const [masterId, setMasterId] = useState("");
+  const [masterTypes, setMasterTypes] = useState<MasterDonasiRow[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
   const [nama, setNama] = useState("");
   const [nominal, setNominal] = useState("");
   const [keterangan, setKeterangan] = useState("");
@@ -26,9 +30,19 @@ export default function DonasiPage() {
   const [success, setSuccess] = useState("");
   const [detailRefreshToken, setDetailRefreshToken] = useState(0);
 
+  useEffect(() => {
+    getMasterDonasi().then(result => {
+      const rows = result.rows || [];
+      setMasterTypes(rows);
+      if (rows.length) setMasterId(rows[0].id);
+    }).catch(exception => setError(exception instanceof Error ? exception.message : "Gagal memuat kategori donasi."))
+      .finally(() => setLoadingTypes(false));
+  }, []);
+
   async function save() {
     const amount = Number(nominal);
     if (!tanggal) return setError("Tanggal donasi wajib diisi.");
+    if (!masterId) return setError("Pilih kategori donasi.");
     if (!nama.trim()) return setError("Nama donatur wajib diisi.");
     if (!Number.isFinite(amount) || amount <= 0) return setError("Nominal donasi harus lebih dari nol.");
 
@@ -38,6 +52,7 @@ export default function DonasiPage() {
     try {
       await simpanDonasi({
         tanggal,
+        masterId,
         namaDonatur: nama.trim(),
         nominal: amount,
         keterangan: keterangan.trim(),
@@ -65,11 +80,13 @@ export default function DonasiPage() {
       <div className="grid">
         <label>Tanggal Donasi<input type="date" value={tanggal} onChange={event => setTanggal(event.target.value)} /><small>Periode: {new Date(`${tanggal}T12:00:00`).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}</small></label>
         <label>Tipe<input value="DONASI" readOnly /></label>
+        <label>Kategori Donasi<select value={masterId} onChange={event => setMasterId(event.target.value)} disabled={loadingTypes || !masterTypes.length}><option value="">{loadingTypes ? "Memuat kategori..." : "Pilih kategori donasi"}</option>{masterTypes.map(type => <option key={type.id} value={type.id}>{type.nama}</option>)}</select></label>
         <label>Nama Donatur<input value={nama} onChange={event => setNama(event.target.value)} placeholder="Nama donatur" /></label>
         <label>Nominal Donasi (Rp)<input type="number" min="1" value={nominal} onChange={event => setNominal(event.target.value)} placeholder="Contoh: 100000" /></label>
         <label className="wide">Keterangan<input value={keterangan} onChange={event => setKeterangan(event.target.value)} placeholder="Keterangan tambahan (opsional)" /></label>
       </div>
-      <div className="actions"><button disabled={busy} onClick={save}>{busy ? "Menyimpan..." : "Simpan Donasi"}</button></div>
+      {!loadingTypes && !masterTypes.length && <p className="warning">Belum ada kategori donasi. Tambahkan melalui menu Master Donasi.</p>}
+      <div className="actions"><button disabled={busy || loadingTypes || !masterTypes.length} onClick={save}>{busy ? "Menyimpan..." : "Simpan Donasi"}</button></div>
     </section>
     <PemasukanDetailTable type="DONASI" refreshToken={detailRefreshToken} />
     <style jsx>{`
@@ -82,7 +99,7 @@ export default function DonasiPage() {
       .card{width:100%;background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(15,23,42,.03)}
       .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
       .grid label{display:grid;gap:5px;font-size:13px;font-weight:650}.grid small{color:#64748b;font-size:11px;font-weight:500}
-      .grid input{height:38px;border:1px solid #cbd5e1;border-radius:8px;padding:0 10px;font:inherit;min-width:0}
+      .grid input,.grid select{height:38px;border:1px solid #cbd5e1;border-radius:8px;padding:0 10px;background:#fff;font:inherit;min-width:0}
       .wide{grid-column:1/-1}
       .actions{display:flex;justify-content:flex-end;margin-top:12px}
       .actions button{background:#2563eb;color:#fff;border:0;border-radius:9px;padding:10px 18px;font-weight:700;cursor:pointer}
@@ -90,6 +107,7 @@ export default function DonasiPage() {
       .alert{padding:12px;border-radius:8px;margin-bottom:12px}
       .error{background:#fef2f2;color:#b91c1c}
       .success{background:#f0fdf4;color:#166534}
+      .warning{margin:12px 0 0;padding:10px;border-radius:8px;background:#fffbeb;color:#b45309;font-size:13px}
       @media(max-width:650px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
     `}</style>
   </main>;

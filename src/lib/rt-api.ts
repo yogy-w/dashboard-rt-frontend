@@ -134,6 +134,7 @@ export type PemasukanRow = {
   nama: string;
   keterangan: string;
   nominal: number;
+  updatedAt?: string;
 };
 
 export async function getPemasukan() {
@@ -177,6 +178,18 @@ export async function simpanJimpitan(payload: {
   });
 }
 
+export async function updateJimpitan(payload: { id: string; masterId: string; tanggal: string; keterangan?: string; nominal: number }) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_jimpitan', ...payload }) });
+}
+
+export async function updateDonasi(payload: { id: string; masterId: string; tanggal: string; namaDonatur: string; nominal: number; keterangan?: string }) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_donasi', ...payload }) });
+}
+
+export async function deleteTransaksi(id: string) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_transaksi', id }) });
+}
+
 
 export type KategoriPengeluaran = {
   id: string;
@@ -185,6 +198,7 @@ export type KategoriPengeluaran = {
 };
 
 export type PengeluaranRow = {
+  id: string;
   rowNumber?: number;
   bulan: string;
   tanggal: string | null;
@@ -208,14 +222,6 @@ export async function tambahKategoriPengeluaran(nama: string) {
   });
 }
 
-export async function ubahStatusKategoriPengeluaran(id: string, status: boolean) {
-  return rtFetch('', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'ubah_status_kategori_pengeluaran', id, status }),
-  });
-}
-
 export async function getPengeluaran() {
   return rtFetch('?action=pengeluaran') as Promise<{
     success: boolean;
@@ -236,8 +242,22 @@ export async function simpanPengeluaran(payload: {
   });
 }
 
+export async function updatePengeluaran(payload: { id: string; tanggal: string; kategori: string; keterangan: string; nominal: number }) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_pengeluaran', ...payload }) });
+}
 
-export async function simpanDonasi(payload: { tanggal: string; namaDonatur: string; nominal: number; keterangan?: string }) {
+export type MasterDonasiRow = { id: string; nama: string };
+
+export async function getMasterDonasi() {
+  return rtFetch('?action=master_donasi') as Promise<{ success: boolean; rows: MasterDonasiRow[] }>;
+}
+
+export async function tambahMasterDonasi(nama: string) {
+  return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tambah_master_donasi', nama }) }) as Promise<{ success: boolean; message?: string; row?: MasterDonasiRow }>;
+}
+
+
+export async function simpanDonasi(payload: { tanggal: string; masterId: string; namaDonatur: string; nominal: number; keterangan?: string }) {
   return rtFetch('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'simpan_donasi', ...payload }) });
 }
 
@@ -270,15 +290,6 @@ export async function tambahMasterPemasukan(payload: {
     body: JSON.stringify({ action: 'tambah_master', ...payload }),
   }) as Promise<{ success: boolean; message?: string; row?: MasterPemasukanRow }>;
 }
-
-export async function ubahStatusMasterPemasukan(id: string, status: boolean) {
-  return rtFetch('', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'ubah_status_master', id, status }),
-  }) as Promise<{ success: boolean; message?: string }>;
-}
-
 
 // Checklist Iuran: data dihitung server-side dari APP_WARGA_STATUS dan APP_PEMASUKAN.
 export type ChecklistIuranCell = { status: 'PAID' | 'MIGRATED' | 'UNPAID' | 'NOT_DUE' };
