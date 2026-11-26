@@ -30,7 +30,7 @@ const reportItems = [
 
 const masterItems = [
   { href: "/pemasukan/master-pemasukan", label: "Master Pemasukan", icon: BookOpen },
-  { href: "/pemasukan/master-kategori", label: "Master Kategori Pengeluaran", icon: Tags },
+  { href: "/pemasukan/master-kategori", label: "Master Pengeluaran", icon: Tags },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -40,6 +40,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<{username:string;role:string}|null>(null);
   const [checking, setChecking] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -55,7 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => { alive = false; };
   }, [pathname]);
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => { setMobileOpen(false); setAccountMenuOpen(false); }, [pathname]);
 
   async function logout() {
     setLoggingOut(true);
@@ -63,6 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       await fetch("/api/pemasukan-auth/logout", { method: "POST", cache: "no-store" });
       setIsAdmin(false);
       setCurrentUser(null);
+      setAccountMenuOpen(false);
       router.replace("/kas");
       router.refresh();
     } finally {
@@ -124,16 +126,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </>}
 
-        <div className="appSidebarBottom">
-          {!checking && (isAdmin
-            ? <button className="appAuthButton logout" onClick={logout} disabled={loggingOut}>
-                <LogOut size={17}/>{loggingOut ? "Keluar..." : "Logout"}
-              </button>
-            : <Link className="appAuthButton login" href="/pemasukan/login">
-                <LogIn size={17}/>Login Pengurus
-              </Link>
-          )}
-        </div>
       </aside>
 
       <div className="appMain">
@@ -147,7 +139,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="appTopSubtitle">RT 005 / RW 031</div>
             </div>
           </div>
-          {isAdmin && <span className="appAdminPill"><ShieldCheck size={14}/> {currentUser ? `${currentUser.username} · ${currentUser.role}` : "Pengurus"}</span>}
+          {!checking && <div className="appAccountArea">
+            {isAdmin ? <div className="appAccountMenu">
+              <button
+                className="appAdminPill"
+                type="button"
+                aria-expanded={accountMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setAccountMenuOpen(value => !value)}
+              >
+                <ShieldCheck size={14}/>
+                <span>{currentUser ? `${currentUser.username} · ${currentUser.role}` : "Pengurus"}</span>
+              </button>
+              {accountMenuOpen && <div className="appAccountDropdown" role="menu">
+                <button type="button" role="menuitem" onClick={logout} disabled={loggingOut}>
+                  <LogOut size={16}/>{loggingOut ? "Keluar..." : "Logout"}
+                </button>
+              </div>}
+            </div> : <Link className="appLoginButton" href="/pemasukan/login">
+              <LogIn size={16}/>Login
+            </Link>}
+          </div>}
         </header>
         <main className="appContent">{children}</main>
       </div>

@@ -65,7 +65,7 @@ export default function PengeluaranPage() {
         <label className="wide">Keterangan<input value={keterangan} onChange={e=>setKeterangan(e.target.value)} placeholder="Contoh: Pembelian gembok lemari RT"/></label>
         <label>Nominal (Rp)<input type="number" min="1" step="1" value={nominal} onChange={e=>setNominal(e.target.value)} placeholder="Contoh: 108000"/></label>
       </div>}
-      {!loading&&!categories.length&&<p className="epWarning">Belum ada kategori aktif. Tambahkan melalui menu Master Kategori.</p>}
+      {!loading&&!categories.length&&<p className="epWarning">Belum ada kategori aktif. Tambahkan melalui menu Master Pengeluaran.</p>}
       <div className="epActions"><button onClick={submit} disabled={saving||loading||!categories.length}><Save size={16}/>{saving?"Menyimpan...":"Simpan Pengeluaran"}</button></div>
     </section>
     <section className="epCard epHistory"><div className="epHistoryHead"><div><h2>Pengeluaran Terakhir</h2><p>12 transaksi terbaru</p></div><button onClick={()=>void load()}><RefreshCw size={15}/> Refresh</button></div>
